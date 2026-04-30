@@ -598,7 +598,8 @@ async function callGemini(userText, imageBase64) {
     contents: [{ parts }],
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 800
+      maxOutputTokens: 1500,
+      thinkingConfig: { thinkingBudget: 0 }
     }
   };
 
