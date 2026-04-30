@@ -336,14 +336,9 @@ body {
 
 <script>
 const STORAGE_KEY = 'nature_observer_chats';
-const GEMINI_API_KEY = 'AIzaSyB3pw92scy6jCzJd46lpuLchePCYGRaNAw';
 let currentChatId = null;
 let selectedImage = null;
 let selectedImageBase64 = null;
-
-function getApiKey() {
-  return GEMINI_API_KEY;
-}
 
 function getAllChats() {
   return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -560,8 +555,7 @@ async function sendMessage() {
 }
 
 async function callGemini(userText, imageBase64) {
-  const apiKey = getApiKey();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `/api/chat`;
 
   const systemPrompt = `너는 초등학생을 위한 자연관찰 도우미 AI야.
 학생이 식물 사진을 보내면, 아래 두 가지를 알려줘:
