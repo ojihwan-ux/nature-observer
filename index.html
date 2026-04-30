@@ -330,32 +330,16 @@ body {
   </div>
 </div>
 
-<!-- API Key Modal -->
-<div class="modal-overlay" id="apiModal">
-  <div class="modal">
-    <h3>🔑 API 키 설정</h3>
-    <p>Gemini API 키를 입력해주세요.<br>키는 이 기기에만 저장됩니다.</p>
-    <input type="password" id="apiKeyInput" placeholder="Gemini API Key">
-    <button onclick="saveApiKey()">저장</button>
-  </div>
-</div>
 
 <script>
 const STORAGE_KEY = 'nature_observer_chats';
-const API_KEY_STORAGE = 'gemini_api_key';
+const GEMINI_API_KEY = 'AIzaSyB3pw92scy6jCzJd46lpuLchePCYGRaNAw';
 let currentChatId = null;
 let selectedImage = null;
 let selectedImageBase64 = null;
 
 function getApiKey() {
-  return localStorage.getItem(API_KEY_STORAGE);
-}
-
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) return;
-  localStorage.setItem(API_KEY_STORAGE, key);
-  document.getElementById('apiModal').classList.remove('show');
+  return GEMINI_API_KEY;
 }
 
 function getAllChats() {
@@ -540,11 +524,6 @@ document.getElementById('textInput').addEventListener('keydown', function(e) {
 });
 
 async function sendMessage() {
-  if (!getApiKey()) {
-    document.getElementById('apiModal').classList.add('show');
-    return;
-  }
-
   const text = document.getElementById('textInput').value.trim();
   const imageData = selectedImageBase64;
 
@@ -644,9 +623,6 @@ async function callGemini(userText, imageBase64) {
 }
 
 // Init
-if (!getApiKey()) {
-  document.getElementById('apiModal').classList.add('show');
-}
 if (!currentChatId) currentChatId = 'chat_' + Date.now();
 renderChatList();
 </script>
