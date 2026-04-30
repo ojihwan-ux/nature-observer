@@ -621,6 +621,14 @@ async function callGemini(userText, imageBase64) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '분석 결과를 가져올 수 없습니다.';
 }
 
+// Force clear stale caches (handles mobile browser aggressive caching)
+if ('caches' in window) {
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+}
+
 // Init
 if (!currentChatId) currentChatId = 'chat_' + Date.now();
 renderChatList();
