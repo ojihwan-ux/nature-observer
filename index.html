@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>🌿 자연관찰 도우미</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -558,7 +561,7 @@ async function sendMessage() {
     renderChatList();
   } catch (err) {
     loading.remove();
-    appendMessage('ai', 'AI 응답 중 오류가 발생했습니다. 다시 시도해주세요.');
+    appendMessage('ai', '⚠️ 오류: ' + (err.message || err.toString()));
   }
 }
 
