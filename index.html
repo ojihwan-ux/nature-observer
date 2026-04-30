@@ -629,20 +629,91 @@ async function callGemini(userText, imageBase64) {
     }
   };
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+  // === Diagnostic logging ===
+  const requestPayload = JSON.stringify(body);
+  const reqSizeKB = (requestPayload.length / 1024).toFixed(1);
+  console.group('[AI 호출] 요청');
+  console.log('URL:', url);
+  console.log('요청 본문 크기:', reqSizeKB + ' KB');
+  console.log('이미지 포함:', !!imageBase64);
+  console.log('parts 개수:', parts.length);
+  console.groupEnd();
 
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    const errMsg = errData.error?.message || errData.error || `HTTP ${res.status}`;
-    throw new Error(typeof errMsg === 'object' ? JSON.stringify(errMsg) : errMsg);
+  const t0 = performance.now();
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: requestPayload
+    });
+  } catch (netErr) {
+    console.error('[AI 호출] 네트워크 실패:', netErr);
+    throw new Error('네트워크 오류: ' + netErr.message + ' (요청 크기 ' + reqSizeKB + 'KB)');
+  }
+  const elapsed = (performance.now() - t0).toFixed(0);
+
+  // Read body as text first so we can log raw response on parse failures.
+  const rawText = await res.text();
+  let parsed = null;
+  let parseError = null;
+  try {
+    parsed = rawText ? JSON.parse(rawText) : null;
+  } catch (e) {
+    parseError = e.message;
   }
 
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '분석 결과를 가져올 수 없습니다.';
+  console.group('[AI 호출] 응답 (' + elapsed + 'ms)');
+  console.log('HTTP status:', res.status, res.statusText);
+  console.log('Content-Type:', res.headers.get('content-type'));
+  console.log('응답 본문 크기:', rawText.length + ' bytes');
+  if (parsed) {
+    console.log('파싱된 JSON:', parsed);
+  } else {
+    console.log('파싱 실패:', parseError);
+    console.log('원본 응답 (처음 500자):', rawText.slice(0, 500));
+  }
+  console.groupEnd();
+
+  // Build a diagnostic block to show inline in the chat on any failure.
+  const diagBlock = (label) => {
+    const safe = (s) => String(s).replace(/[<>]/g, c => c === '<' ? '<' : '>');
+    return '
+
+---
+**🔧 진단 정보** (' + label + ')
+'
+      + '- HTTP: ' + res.status + ' ' + res.statusText + '
+'
+      + '- 소요: ' + elapsed + 'ms
+'
+      + '- 요청 크기: ' + reqSizeKB + ' KB
+'
+      + '- Content-Type: ' + (res.headers.get('content-type') || '없음') + '
+'
+      + '- 응답 본문(처음 800자):
+```
+' + safe(rawText.slice(0, 800)) + '
+```';
+  };
+
+  if (!res.ok) {
+    const upstreamMsg = parsed?.error?.message
+      || (typeof parsed?.error === 'string' ? parsed.error : null)
+      || ('HTTP ' + res.status);
+    throw new Error(upstreamMsg + diagBlock('호출 실패'));
+  }
+
+  if (!parsed) {
+    throw new Error('응답을 JSON으로 해석할 수 없습니다.' + diagBlock('파싱 실패'));
+  }
+
+  const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    // 200 OK 인데 candidates가 비어있는 경우(safety block 등) 진단 정보 노출
+    throw new Error('응답에 텍스트가 없습니다.' + diagBlock('빈 응답'));
+  }
+  return text;
 }
 
 // Force clear stale caches (handles mobile browser aggressive caching)
