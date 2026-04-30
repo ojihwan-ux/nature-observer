@@ -711,24 +711,16 @@ async function callGemini(userText, imageBase64) {
 
   // Build a diagnostic block to show inline in the chat on any failure.
   const diagBlock = (label) => {
-    const safe = (s) => String(s).replace(/[<>]/g, c => c === '<' ? '<' : '>');
-    return '
-
----
-**🔧 진단 정보** (' + label + ')
-'
-      + '- HTTP: ' + res.status + ' ' + res.statusText + '
-'
-      + '- 소요: ' + elapsed + 'ms
-'
-      + '- 요청 크기: ' + reqSizeKB + ' KB
-'
-      + '- Content-Type: ' + (res.headers.get('content-type') || '없음') + '
-'
-      + '- 응답 본문(처음 800자):
-```
-' + safe(rawText.slice(0, 800)) + '
-```';
+    const ct = res.headers.get('content-type') || '없음';
+    const bodyPreview = rawText.slice(0, 800);
+    return "\n\n---\n**\uc9c4\ub2e8 \uc815\ubcf4** (__LABEL__)\n- HTTP: __STATUS__ __STATUSTEXT__\n- \uc18c\uc694: __ELAPSED__ms\n- \uc694\uccad \ud06c\uae30: __SIZE__ KB\n- Content-Type: __CT__\n- \uc751\ub2f5 \ubcf8\ubb38(\ucc98\uc74c 800\uc790):\n```\n__BODY__\n```"
+      .replace('__LABEL__', label)
+      .replace('__STATUS__', String(res.status))
+      .replace('__STATUSTEXT__', res.statusText || '')
+      .replace('__ELAPSED__', String(elapsed))
+      .replace('__SIZE__', String(reqSizeKB))
+      .replace('__CT__', ct)
+      .replace('__BODY__', bodyPreview);
   };
 
   if (!res.ok) {
