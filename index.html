@@ -564,7 +564,7 @@ async function sendMessage() {
 
 async function callGemini(userText, imageBase64) {
   const apiKey = getApiKey();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const systemPrompt = `너는 초등학생을 위한 자연관찰 도우미 AI야.
 학생이 식물 사진을 보내면, 아래 두 가지를 알려줘:
