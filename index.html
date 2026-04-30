@@ -601,7 +601,8 @@ async function callGemini(userText, imageBase64) {
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error?.message || `HTTP ${res.status}`);
+    const errMsg = errData.error?.message || errData.error || `HTTP ${res.status}`;
+    throw new Error(typeof errMsg === 'object' ? JSON.stringify(errMsg) : errMsg);
   }
 
   const data = await res.json();
