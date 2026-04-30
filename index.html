@@ -558,12 +558,7 @@ async function sendMessage() {
     renderChatList();
   } catch (err) {
     loading.remove();
-    let errorMsg = 'AI 응답 중 오류가 발생했습니다.';
-    if (err.message.includes('API_KEY')) {
-      errorMsg = 'API 키가 올바르지 않습니다. 다시 설정해주세요.';
-      localStorage.removeItem(API_KEY_STORAGE);
-    }
-    appendMessage('ai', errorMsg);
+    appendMessage('ai', 'AI 응답 중 오류가 발생했습니다. 다시 시도해주세요.');
   }
 }
 
