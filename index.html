@@ -473,21 +473,57 @@ function escapeHtml(text) {
   return d.innerHTML;
 }
 
+// Resize + compress image on client to stay under Vercel Edge 4.5MB body limit.
+// Phone photos are commonly 5-10MB raw and grow ~33% under base64; without this,
+// every upload fails the API call.
+function resizeAndCompressImage(file, maxDim = 1024, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const img = new Image();
+      img.onload = function() {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            height = Math.round(height * (maxDim / width));
+            width = maxDim;
+          } else {
+            width = Math.round(width * (maxDim / height));
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('이미지를 불러오지 못했습니다.'));
+      img.src = ev.target.result;
+    };
+    reader.onerror = () => reject(new Error('파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 // File input
-document.getElementById('fileInput').addEventListener('change', function(e) {
+document.getElementById('fileInput').addEventListener('change', async function(e) {
   const file = e.target.files[0];
+  e.target.value = '';
   if (!file) return;
 
   selectedImage = file;
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    selectedImageBase64 = ev.target.result;
+  try {
+    selectedImageBase64 = await resizeAndCompressImage(file, 1024, 0.85);
     document.getElementById('previewImg').src = selectedImageBase64;
     document.getElementById('previewContainer').style.display = 'block';
     updateSendBtn();
-  };
-  reader.readAsDataURL(file);
-  e.target.value = '';
+  } catch (err) {
+    selectedImage = null;
+    selectedImageBase64 = null;
+    alert('이미지 처리 실패: ' + err.message);
+  }
 });
 
 function removeImage() {
