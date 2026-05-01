@@ -1,7 +1,7 @@
 export const config = { runtime: 'edge' };
 
-const MODEL = 'gemini-2.0-flash';
-const FALLBACK_MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-2.5-flash';
+const FALLBACK_MODEL = 'gemini-flash-latest';
 
 async function callGemini(model, apiKey, body) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -41,7 +41,7 @@ export default async function handler(req) {
     let { res, data } = await callGemini(MODEL, apiKey, body);
 
     // Auto-fallback to a different model on quota/rate-limit/overload.
-    if ((res.status === 429 || res.status === 503) && FALLBACK_MODEL !== MODEL) {
+    if ((res.status === 429 || res.status === 503 || res.status === 404) && FALLBACK_MODEL !== MODEL) {
       const fb = await callGemini(FALLBACK_MODEL, apiKey, body);
       if (fb.res.ok) {
         res = fb.res;
