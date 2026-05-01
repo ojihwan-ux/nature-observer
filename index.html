@@ -378,10 +378,11 @@ function toggleSidebar() {
 function renderChatList() {
   const chats = getAllChats();
   const list = document.getElementById('chatList');
-  const sorted = Object.values(chats).sort((a, b) => b.created - a.created);
-  list.innerHTML = sorted.map(c => `
+  // 생성 시각 오름차순으로 정렬 → 가장 먼저 시작한 대화가 1번, 다음이 2, 3, 4 ...
+  const sorted = Object.values(chats).sort((a, b) => a.created - b.created);
+  list.innerHTML = sorted.map((c, i) => `
     <div class="chat-item ${c.id === currentChatId ? 'active' : ''}" onclick="loadChat('${c.id}')">
-      <span class="title">${c.title}</span>
+      <span class="title">${i + 1}</span>
       <button class="delete-btn" onclick="event.stopPropagation(); deleteChat('${c.id}')">🗑</button>
     </div>
   `).join('');
