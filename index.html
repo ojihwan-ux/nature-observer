@@ -659,7 +659,10 @@ async function callGemini(userText, imageBase64) {
     contents: [{ parts }],
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 1500
+      maxOutputTokens: 2048,
+      // gemini-2.5-flash는 기본으로 'thinking' 모드가 켜져 있어 출력 토큰의
+      // 대부분을 내부 추론에 소비합니다. 0으로 두면 추론 없이 바로 답변 생성.
+      thinkingConfig: { thinkingBudget: 0 }
     }
   };
 
