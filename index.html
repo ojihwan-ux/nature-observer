@@ -615,13 +615,15 @@ async function sendMessage() {
 
   try {
     const response = await callGemini(text, imageData);
-    loading.remove();
     appendMessage('ai', response);
     saveChatMessage(currentChatId, 'ai', response);
     renderChatList();
   } catch (err) {
-    loading.remove();
+    console.error('[AI 호출 실패]', err);
     appendMessage('ai', '⚠️ 오류: ' + (err.message || err.toString()));
+  } finally {
+    // 어떤 경로로 끝나든 로딩 인디케이터는 반드시 제거.
+    if (loading && loading.parentNode) loading.remove();
   }
 }
 
@@ -677,18 +679,33 @@ async function callGemini(userText, imageBase64) {
   console.log('parts 개수:', parts.length);
   console.groupEnd();
 
+  // Vercel Edge Function 본문 한도(4.5MB)에 도달하기 전에 차단.
+  if (requestPayload.length > 4_000_000) {
+    throw new Error('요청이 너무 큽니다 (' + reqSizeKB + 'KB). 사진을 더 작게 찍거나 다른 사진을 사용해 주세요.');
+  }
+
   const t0 = performance.now();
+  // 모바일 네트워크에서 서버가 응답을 끊어도 fetch가 무한 대기하는 것을 방지.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
+
   let res;
   try {
     res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: requestPayload
+      body: requestPayload,
+      signal: controller.signal
     });
   } catch (netErr) {
+    clearTimeout(timeoutId);
     console.error('[AI 호출] 네트워크 실패:', netErr);
+    if (netErr.name === 'AbortError') {
+      throw new Error('서버 응답 시간 초과(45초). 네트워크 상태를 확인하거나 잠시 후 다시 시도해 주세요. (요청 ' + reqSizeKB + 'KB)');
+    }
     throw new Error('네트워크 오류: ' + netErr.message + ' (요청 크기 ' + reqSizeKB + 'KB)');
   }
+  clearTimeout(timeoutId);
   const elapsed = (performance.now() - t0).toFixed(0);
 
   // Read body as text first so we can log raw response on parse failures.
